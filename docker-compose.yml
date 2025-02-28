@@ -1,0 +1,11 @@
+services:
+  advanced-backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+  advanced-frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - advanced-backend

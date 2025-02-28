@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template for deploying the Endeavor Matcher project on an EC2 instance running Amazon Linux 2023.
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+  InstanceType:
+    Description: EC2 instance type (choose an ARM‑based type if using an ARM AMI)
+    Type: String
+    Default: t4g.micro
+    AllowedValues:
+      - t4g.micro
+      - t4g.small
+      - t4g.medium
+    ConstraintDescription: Must be a valid ARM‑based EC2 instance type.
+
+Resources:
+  AdvancedEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref Key-Advanced
+      # Amazon Linux 2023 ARM-based AMI for us-west-1
+      ImageId: ami-0494a972fde2019fb
+      SecurityGroups: [!Ref InstanceSecurityGroup]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          sudo dnf update -y
+          sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+          sudo sed -i 's/\$releasever/8/g' /etc/yum.repos.d/docker-ce.repo
+          sudo dnf clean all
+          sudo dnf install -y docker-ce docker-ce-cli containerd.io git
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo usermod -aG docker ec2-user
+          # (Optional) Remove or do not install standalone docker-compose if using the plugin
+          cd /home/ec2-user
+          git clone https://github.com/MatthewSHaynam/endeavor-matcher-advanced.git
+          cd endeavor-matcher
+          sudo docker compose up -d
+
+
+
+  AdvancedSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow inbound HTTP (80), backend (5000), and SSH (22) traffic
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  InstancePublicIP:
+    Description: Public IP address of the EC2 instance
+    Value: !GetAtt MatcherEC2Instance.PublicIp
