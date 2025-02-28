@@ -3,51 +3,36 @@ Description: CloudFormation Template for deploying the Endeavor Matcher project 
 
 Parameters:
   KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access
-    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair
+    Type: AWS::EC2::KeyPair::KeyName  # <-- correct parameter type
   InstanceType:
-    Description: EC2 instance type (choose an ARM‑based type if using an ARM AMI)
+    Description: EC2 instance type
     Type: String
     Default: t4g.micro
     AllowedValues:
       - t4g.micro
       - t4g.small
       - t4g.medium
-    ConstraintDescription: Must be a valid ARM‑based EC2 instance type.
 
 Resources:
   AdvancedEC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      KeyName: !Ref Key-Advanced
-      # Amazon Linux 2023 ARM-based AMI for us-west-1
+      KeyName: !Ref KeyName              # <-- references the parameter
       ImageId: ami-0494a972fde2019fb
-      SecurityGroups: [!Ref InstanceSecurityGroup]
+      SecurityGroups:
+        - !Ref AdvancedSecurityGroup     # <-- references the resource named below
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          sudo dnf update -y
-          sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
-          sudo sed -i 's/\$releasever/8/g' /etc/yum.repos.d/docker-ce.repo
-          sudo dnf clean all
-          sudo dnf install -y docker-ce docker-ce-cli containerd.io git
-          sudo systemctl start docker
-          sudo systemctl enable docker
-          sudo usermod -aG docker ec2-user
-          # (Optional) Remove or do not install standalone docker-compose if using the plugin
-          cd /home/ec2-user
-          git clone https://github.com/MatthewSHaynam/endeavor-matcher-advanced.git
-          cd endeavor-matcher
-          sudo docker compose up -d
-
-
+          ...
 
   AdvancedSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow inbound HTTP (80), backend (5000), and SSH (22) traffic
+      GroupDescription: Allow inbound HTTP (80), backend (5000), and SSH (22)
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -65,4 +50,4 @@ Resources:
 Outputs:
   InstancePublicIP:
     Description: Public IP address of the EC2 instance
-    Value: !GetAtt MatcherEC2Instance.PublicIp
+    Value: !GetAtt AdvancedEC2Instance.PublicIp  # <-- must match resource name
