@@ -57,14 +57,17 @@
     </div>
     <div class="result" id="result"></div>
 </div>
+
 <script>
+const backendBaseUrl = window.location.origin.replace(/^http/, 'http') + ':5000';
+
 function uploadCSV() {
     const fileInput = document.getElementById('csvFile');
     const file = fileInput.files[0];
     if (!file) { alert('Please select a CSV file.'); return; }
     const formData = new FormData();
     formData.append('file', file);
-    fetch('http://54.176.175.19:5000/upload', {
+    fetch(`${backendBaseUrl}/upload`, {
         method: 'POST',
         body: formData
     })
@@ -76,7 +79,7 @@ function uploadCSV() {
 function findMatch() {
     const userInput = document.getElementById('userInput').value;
     if (!userInput) { alert('Please enter a query.'); return; }
-    fetch('http://54.176.175.19:5000/match', {
+    fetch(`${backendBaseUrl}/match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input: userInput })
@@ -95,5 +98,6 @@ function findMatch() {
     .catch(error => { console.error('Error:', error); });
 }
 </script>
+
 </body>
 </html>
